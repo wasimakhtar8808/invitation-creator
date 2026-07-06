@@ -1,11 +1,29 @@
-import { LocalStorageEventRepository, LocalStorageRSVPRepository } from './adapters/repositories.js';
 import { InvitationAppRenderer } from './ui/renderer.js';
 
-// 1. Instantiate concrete repository dependencies
-const eventRepo = new LocalStorageEventRepository();
-const rsvpRepo = new LocalStorageRSVPRepository();
+// ==========================================================================
+// 🌐 FIREBASE CONFIGURATION
+// ==========================================================================
+// To connect your application to your live Firebase Cloud Firestore:
+// 1. Go to Firebase Console -> Project Settings -> General.
+// 2. Under 'Your apps', click the Web App (</>) and copy the firebaseConfig object.
+// 3. Paste the config object below.
+// Example:
+// const FIREBASE_CONFIG = {
+//   apiKey: "AIzaSy...",
+//   authDomain: "invitation-creator-rsvp.firebaseapp.com",
+//   projectId: "invitation-creator-rsvp",
+//   storageBucket: "invitation-creator-rsvp.appspot.com",
+//   messagingSenderId: "123456789",
+//   appId: "1:123456789:web:abcd1234efgh"
+// };
+const FIREBASE_CONFIG = null;
 
-// 2. Seed default data if storage is empty (Premium User Experience)
+// Global repositories and renderer instances
+let eventRepo;
+let rsvpRepo;
+let renderer;
+
+// Seed default data if database is empty (Premium User Experience)
 async function seedDefaultData() {
   const existingEvents = await eventRepo.findAll();
   if (existingEvents.length === 0) {
@@ -67,7 +85,6 @@ async function seedDefaultData() {
     ];
 
     for (const g of guests) {
-      // Create guest
       const newGuest = {
         id: 'demo-gt-' + Math.random().toString(36).substr(2, 5),
         name: g.name,
@@ -75,7 +92,6 @@ async function seedDefaultData() {
       };
       await rsvpRepo.saveGuest(newGuest);
 
-      // Create RSVP
       await rsvpRepo.saveRSVP({
         id: 'demo-rs-' + Math.random().toString(36).substr(2, 5),
         guestId: newGuest.id,
@@ -116,67 +132,71 @@ async function seedDefaultData() {
   }
 }
 
-// 3. Initialize renderer
-const appContainer = document.getElementById('app');
-const renderer = new InvitationAppRenderer(appContainer, eventRepo, rsvpRepo);
-
-// 4. Register Custom Application Event Handlers (Loose Coupling)
-document.addEventListener('switch-event', async (e) => {
-  renderer.activeDashboardEventId = e.detail;
-  await renderer.renderDashboard();
-});
-
-document.addEventListener('copy-link', async (e) => {
-  const url = e.detail;
-  try {
-    await navigator.clipboard.writeText(url);
-    renderer.showToast('📋 Invitation link copied to clipboard!');
-  } catch (err) {
-    // Fallback if clipboard isn't supported/blocked
-    prompt('Copy this invitation link:', url);
-  }
-});
-
-document.addEventListener('clear-rsvps', async (e) => {
-  const eventId = e.detail;
-  if (confirm('Are you sure you want to clear all RSVPs for this event? This action cannot be undone.')) {
-    // Delete RSVPs and associated guests for the event
-    const rsvps = localStorage.getItem('invitation_rsvps');
-    if (rsvps) {
-      const parsed = JSON.parse(rsvps);
-      const filtered = Object.keys(parsed)
-        .filter(key => parsed[key].eventId !== eventId)
-        .reduce((obj, key) => {
-          obj[key] = parsed[key];
-          return obj;
-        }, {});
-      localStorage.setItem('invitation_rsvps', JSON.stringify(filtered));
-    }
-    
-    const guests = localStorage.getItem('invitation_guests');
-    if (guests) {
-      const parsed = JSON.parse(guests);
-      const filtered = Object.keys(parsed)
-        .filter(key => parsed[key].eventId !== eventId)
-        .reduce((obj, key) => {
-          obj[key] = parsed[key];
-          return obj;
-        }, {});
-      localStorage.setItem('invitation_guests', JSON.stringify(filtered));
-    }
-
-    renderer.showToast('🗑️ RSVPs cleared successfully!');
-    await renderer.renderDashboard();
-  }
-});
-
-// Detect browser back/forward buttons or hash changes
+// Global Router POP State trigger
 window.addEventListener('popstate', async () => {
-  await renderer.route();
+  if (renderer) {
+    await renderer.route();
+  }
 });
 
-// 5. Run setup and bootstrap router
+// App Startup Orchestrator (IIFE)
 (async () => {
+  // 1. Dynamic Repository instantiation (Firebase vs LocalStorage)
+  if (FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey) {
+    console.log('Firebase Config detected. Initializing Cloud Firestore repositories...');
+    try {
+      const { FirebaseEventRepository, FirebaseRSVPRepository } = await import('./adapters/firebaseRepositories.js');
+      eventRepo = new FirebaseEventRepository(FIREBASE_CONFIG);
+      rsvpRepo = new FirebaseRSVPRepository(FIREBASE_CONFIG);
+    } catch (err) {
+      console.error('Failed to load Firebase repository, falling back to LocalStorage:', err);
+      const { LocalStorageEventRepository, LocalStorageRSVPRepository } = await import('./adapters/repositories.js');
+      eventRepo = new LocalStorageEventRepository();
+      rsvpRepo = new LocalStorageRSVPRepository();
+    }
+  } else {
+    console.log('No Firebase Config found. Operating in LocalStorage fallback mode...');
+    const { LocalStorageEventRepository, LocalStorageRSVPRepository } = await import('./adapters/repositories.js');
+    eventRepo = new LocalStorageEventRepository();
+    rsvpRepo = new LocalStorageRSVPRepository();
+  }
+
+  // 2. Initialize renderer instance
+  const appContainer = document.getElementById('app');
+  renderer = new InvitationAppRenderer(appContainer, eventRepo, rsvpRepo);
+
+  // 3. Register Custom decoupled event listeners
+  document.addEventListener('switch-event', async (e) => {
+    renderer.activeDashboardEventId = e.detail;
+    await renderer.renderDashboard();
+  });
+
+  document.addEventListener('copy-link', async (e) => {
+    const url = e.detail;
+    try {
+      await navigator.clipboard.writeText(url);
+      renderer.showToast('📋 Invitation link copied to clipboard!');
+    } catch (err) {
+      prompt('Copy this invitation link:', url);
+    }
+  });
+
+  document.addEventListener('clear-rsvps', async (e) => {
+    const eventId = e.detail;
+    if (confirm('Are you sure you want to clear all RSVPs for this event? This action cannot be undone.')) {
+      try {
+        await rsvpRepo.clearForEvent(eventId);
+        renderer.showToast('🗑️ RSVPs cleared successfully!');
+        await renderer.renderDashboard();
+      } catch (err) {
+        alert(`Error clearing RSVPs: ${err.message}`);
+      }
+    }
+  });
+
+  // 4. Seed databases if empty
   await seedDefaultData();
+
+  // 5. Trigger routing
   await renderer.route();
 })();

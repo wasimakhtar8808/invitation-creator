@@ -44,4 +44,8 @@ export class IRSVPRepository {
   findGuestByEventAndName(eventId, guestName) {
     throw new NotImplementedError('findGuestByEventAndName');
   }
+
+  clearForEvent(eventId) {
+    throw new NotImplementedError('clearForEvent');
+  }
 }

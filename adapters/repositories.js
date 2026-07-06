@@ -136,4 +136,24 @@ export class LocalStorageRSVPRepository extends IRSVPRepository {
     if (!match) return null;
     return new Guest(match);
   }
+
+  async clearForEvent(eventId) {
+    const rsvps = this._getRawRSVPs();
+    const filteredRSVPs = Object.keys(rsvps)
+      .filter(key => rsvps[key].eventId !== eventId)
+      .reduce((obj, key) => {
+        obj[key] = rsvps[key];
+        return obj;
+      }, {});
+    this._setRawRSVPs(filteredRSVPs);
+
+    const guests = this._getRawGuests();
+    const filteredGuests = Object.keys(guests)
+      .filter(key => guests[key].eventId !== eventId)
+      .reduce((obj, key) => {
+        obj[key] = guests[key];
+        return obj;
+      }, {});
+    this._setRawGuests(filteredGuests);
+  }
 }
