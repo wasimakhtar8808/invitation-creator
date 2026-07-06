@@ -1,84 +1,99 @@
 # Glassmorphic Invitation Creator & RSVP Manager
 
-A premium, responsive Single Page Application (SPA) where users can create, customize, and share digital invitations for events (weddings, birthday parties, corporate events, and baby showers) and track guest RSVPs in real time.
+A premium, responsive Single Page Application (SPA) where hosts can design custom digital invitations and manage guest RSVP lists in real time. 
 
-Built strictly in accordance with **Clean Architecture** guidelines and **SOLID Principles** using modern ES6+ JavaScript, Vanilla CSS, and HTML5.
-
----
-
-## 🎨 Visual Aesthetics & Themes
-
-The application features a sleek glassmorphic user interface (`backdrop-filter: blur()`) with soft background glows, responsive grid templates, and dynamic float-animations. 
-
-Following the **Open/Closed Principle (OCP)**, the theme engine maps configurations dynamically to four pre-built aesthetic themes:
-*   🌸 **Romantic Wedding**: Rose gold highlights, elegant serif font (*Playfair Display*), and falling sakura blossom animations.
-*   ⚡ **Party Neon**: Deep dark mode, neon borders, glowing shadows, sans-serif typography (*Syncopate*), and floating glowing emojis.
-*   🏢 **Formal Corporate**: Professional steel blue tones, clean typography (*Outfit*), deep shadows, and geometric shapes.
-*   🍼 **Baby Shower**: Soft pastel blue/pink gradients, rounded buttons, playful font (*Comfortaa*), and floating bubble animations.
+Built in accordance with **Clean Architecture** boundaries and **SOLID Principles** using modern ES6+ JavaScript, Vanilla CSS, and HTML5.
 
 ---
 
-## 📁 Architecture & Directory Structure
+## 🌐 Production Deployments & Console Links
 
-The codebase is organized into clean architectural layers, keeping business rules independent of databases, framework choices, and presentation layouts:
+*   **Live Website (Netlify)**: [https://premium-event-invite.netlify.app/](https://premium-event-invite.netlify.app/)
+*   **GitHub Repository**: [https://github.com/wasimakhtar8808/invitation-creator](https://github.com/wasimakhtar8808/invitation-creator)
+
+### 🔥 Backend Configuration (Firebase)
+*   **Google Account Owner**: `ghosistate@gmail.com`
+*   **Firebase Project Console**: [invitation-creator-rsvp Dashboard](https://console.firebase.google.com/u/0/project/invitation-creator-rsvp/overview)
+*   **Pricing Plan**: **Spark Plan (100% Free)** — No credit card details or billing required.
+*   **Active Services**:
+    *   **Cloud Firestore Database**: Configured in Test Mode (allowing immediate public guest RSVP reads and writes).
+    *   **Cloud Storage**: Used for binary banner image uploads.
+
+---
+
+## ✨ Features & Integrations
+
+1.  **Aesthetic Themes**:
+    *   🌸 *Romantic Wedding*: Elegant script style (*Playfair Display*), rose gold highlights, and cherry blossom animations.
+    *   ⚡ *Party Neon*: Dark background, glowing text shadow lights (*Syncopate*), and cyber border animations.
+    *   🏢 *Formal Corporate*: Structured blue/charcoal palette, clean lines (*Outfit*), and deep layout card shadows.
+    *   🍼 *Baby Shower*: Rounded pastels, cloud details, and bubble animations (*Comfortaa*).
+2.  **Premium Media Uploader**:
+    *   Allows hosts to upload images from their device during invitation creation.
+    *   **Firebase Storage**: Uploads binaries directly to Firestore Cloud Storage and returns the public link.
+    *   **Offline Fallback**: If Cloud Storage is not configured, the repository catches the error and converts the file to a Base64 data URL string, storing it locally.
+3.  **Toglable Plus-Ones (Additional Guests)**:
+    *   Hosts have a checkbox to allow/disallow additional guests.
+    *   If **Disabled**: The RSVP form hides the "Additional Guests" number picker, defaults the guest count to `0` behind the scenes, and expands the dietary preference box to occupy the full grid.
+4.  **Bulletproof Google Maps**:
+    *   If a host pastes a standard Google Maps share link, the validator parses and converts it to a free embed query (`https://maps.google.com/maps?q=...&output=embed`).
+    *   If the link field is empty, the renderer automatically searches for the event's address and city. A functional interactive map is **always** displayed to the invitee.
+5.  **WhatsApp Guest Notification**:
+    *   After a guest submits an RSVP, they are presented with a button to open a pre-composed WhatsApp message to alert the host (including attendance status, additional guest count, dietary requests, and wishes notes).
+6.  **Strict Phone Validation**:
+    *   Host mobile contacts are automatically checked in the entity and validator layer to ensure they consist of **between 7 and 15 digits** after formatting.
+
+---
+
+## 📁 Architecture Layout
 
 ```
-├── domain/                  # Enterprise/Core Business Rules
-│   ├── entities.js          # Event, Guest, and RSVP models & core validations
-│   └── interfaces.js        # Abstract boundaries (DIP/LSP repositories)
+├── domain/                  # Enterprise Business Rules (Pure JS)
+│   ├── entities.js          # Event, Guest, RSVP models & digit validations
+│   └── interfaces.js        # Abstract repository contracts (DIP/LSP)
 │
-├── usecases/                # Application Business Rules (Interactors)
+├── usecases/                # Core Workflows (Interactors)
 │   ├── eventUsecases.js     # CreateEvent, GetEventDetails, GetAllEvents
 │   └── rsvpUsecases.js      # SubmitRSVP, GetEventRSVPs, GetRSVPStatistics
 │
-├── adapters/                # Interface Adapters
-│   ├── repositories.js      # Concrete LocalStorage-backed DB implementation
+├── adapters/                # Interface Bridges
+│   ├── repositories.js      # Concrete LocalStorage database repository
+│   ├── firebaseRepositories.js # Concrete Cloud Firestore & Storage repository
 │   ├── presenters.js        # Countdown, date formatting, and WhatsApp url generator
-│   └── validators.js        # UI form validators & Maps embed URL extractor
+│   └── validators.js        # Form validation and Google Maps link converter
 │
-├── ui/                      # Frameworks & UI Layer (Web/External)
-│   ├── themes.js            # Extensible theme structures & Theme Engine
-│   └── renderer.js          # DOM rendering templates & action listeners
+├── ui/                      # Delivery Framework (HTML / CSS / DOM)
+│   ├── themes.js            # Extensible themes schema (OCP)
+│   └── renderer.js          # DOM builder templates & action listeners
 │
 ├── index.html               # SPA Entrypoint
-├── styles.css               # Core design tokens, layouts, & animations
-├── app.js                   # Application bootstrap, seeder, & router
-├── tests.js                 # Browser-based automated integration test suite
-└── .gitignore               # Ignored system & config files
+├── styles.css               # Design system classes, margins, and animations
+├── app.js                   # App bootstrapping router & dynamic Firebase initializer
+└── tests.js                 # Automated unit and integration test runner
 ```
 
 ---
 
-## 🚀 Getting Started
+## ⚙️ Running Locally
 
-### 1. Serve the App Locally
-Because the app relies on ES6 modules, the browser blocks imports over local `file:///` paths due to CORS. You must run a local server:
+### 1. Host the Static Files
+Since the application runs modular ES6 javascript (`import`/`export`), browsers block local files via `file:///` protocols. You must run a static server:
 
-*   **Option A: Node.js (npx)**
+*   **With Node.js / npx**:
     ```bash
     npx http-server -p 8080
     ```
-*   **Option B: Python**
+*   **With Python**:
     ```bash
     python -m http.server 8080
     ```
-*   **Option C: PowerShell**
+*   **With PowerShell**:
     ```powershell
-    # Execute the scratch script provided in local artifacts:
     powershell -ExecutionPolicy Bypass -File server.ps1
     ```
 
 Once running, navigate to [http://localhost:8080](http://localhost:8080).
 
-### 2. Live Seeding
-On your first load, the app automatically populates the database with demonstration data:
-1.  **Emma & Liam's Wedding** (Romantic theme, location map embed, and mock RSVPs).
-2.  **Max's Neon Cyber Party** (Party theme, location maps, and pre-recorded guest RSVPs).
-
----
-
-## 🧪 Validation & Automated Testing
-
-The project has a built-in automated test suite that runs directly in your browser.
-*   **To run the tests**: Open [http://localhost:8080/?test=true](http://localhost:8080/?test=true) in your browser.
-*   **Results**: A success/failure notification will banner the page, and the developer console will print full diagnostic logs verifying entity schemas, repository storage cycles, and statistics math.
+### 2. Live Verification
+To execute the automated unit and integration tests, open the app with the `?test=true` parameter in the URL: [http://localhost:8080/?test=true](http://localhost:8080/?test=true).
+- The test runner will verify entity validation constraints, repository read/write speed, and rsvp statistics calculations.
