@@ -55,9 +55,9 @@ export function validateEventForm({
   if (!hostPhone || !hostPhone.trim()) {
     errors.hostPhone = 'Host WhatsApp phone number is required.';
   } else {
-    const cleanPhone = hostPhone.replace(/[\s()+-]/g, '');
-    if (cleanPhone.length < 5 || isNaN(cleanPhone)) {
-      errors.hostPhone = 'Enter a valid phone number (including country code).';
+    const cleanPhone = hostPhone.replace(/[^0-9]/g, '');
+    if (cleanPhone.length < 7 || cleanPhone.length > 15) {
+      errors.hostPhone = 'Phone number must be between 7 and 15 digits.';
     }
   }
 

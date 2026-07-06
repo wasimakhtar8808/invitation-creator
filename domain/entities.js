@@ -16,7 +16,8 @@ export class Event {
     locationMapLink,
     mediaUrl,
     hostPhone,
-    theme
+    theme,
+    allowPlusOnes
   }) {
     this.id = id || this._generateUUID();
     this.type = type || 'custom'; // marriage, birthday, party, corporate, babyshower, custom
@@ -31,6 +32,7 @@ export class Event {
     this.mediaUrl = mediaUrl || '';
     this.hostPhone = hostPhone || '';
     this.theme = theme || 'romantic-wedding';
+    this.allowPlusOnes = allowPlusOnes !== false;
   }
 
   validate() {
@@ -55,9 +57,9 @@ export class Event {
     if (!this.hostPhone.trim()) {
       errors.push('Host contact phone number is required.');
     } else {
-      const cleanPhone = this.hostPhone.replace(/[\s()+-]/g, '');
-      if (cleanPhone.length < 5 || isNaN(cleanPhone)) {
-        errors.push('Host contact phone number must be a valid phone number.');
+      const cleanPhone = this.hostPhone.replace(/[^0-9]/g, '');
+      if (cleanPhone.length < 7 || cleanPhone.length > 15) {
+        errors.push('Host contact phone number must be between 7 and 15 digits.');
       }
     }
     return {

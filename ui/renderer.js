@@ -9,16 +9,16 @@ export class InvitationAppRenderer {
     this.container = appContainer;
     this.eventRepo = eventRepository;
     this.rsvpRepo = rsvpRepository;
-    
+
     // Instantiate usecases
     this.createEventUseCase = new CreateEvent(this.eventRepo);
     this.getEventDetailsUseCase = new GetEventDetails(this.eventRepo);
     this.getAllEventsUseCase = new GetAllEvents(this.eventRepo);
-    
+
     this.submitRSVPUseCase = new SubmitRSVP(this.rsvpRepo);
     this.getEventRSVPsUseCase = new GetEventRSVPs(this.rsvpRepo);
     this.getRSVPStatisticsUseCase = new GetRSVPStatistics(this.rsvpRepo);
-    
+
     this.countdownInterval = null;
     this.selectedTheme = 'romantic-wedding';
     this.activeDashboardEventId = null; // Currently selected event for RSVP stats
@@ -77,7 +77,7 @@ export class InvitationAppRenderer {
     ThemeEngine.apply('formal-corporate', this.container);
 
     const events = await this.getAllEventsUseCase.execute();
-    
+
     // Choose active event for statistics (default to first event if not set)
     if (!this.activeDashboardEventId && events.length > 0) {
       this.activeDashboardEventId = events[0].id;
@@ -119,11 +119,19 @@ export class InvitationAppRenderer {
                 ✨ Create Invitation
               </h2>
               <form id="create-event-form" class="space-y-4">
-                <div>
-                  <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Event Theme</label>
-                  <select id="event-theme" class="form-input">
-                    ${Object.values(THEMES).map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
-                  </select>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Event Theme</label>
+                    <select id="event-theme" class="form-input">
+                      ${Object.values(THEMES).map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
+                    </select>
+                  </div>
+                  <div class="flex items-center" style="padding-top: 1.25rem;">
+                    <label class="flex items-center gap-2 cursor-pointer select-none">
+                      <input type="checkbox" id="event-plus-ones" checked class="accent-indigo-600 w-4 h-4">
+                      <span class="text-xs font-semibold text-slate-700">Allow guests to bring plus-ones (Additional guests)</span>
+                    </label>
+                  </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
@@ -232,14 +240,13 @@ export class InvitationAppRenderer {
               ` : `
                 <div class="grid grid-cols-1 gap-3 max-h-60 overflow-y-auto pr-1">
                   ${events.map(ev => {
-                    const isSelected = ev.id === this.activeDashboardEventId;
-                    const inviteUrl = `${window.location.origin}${window.location.pathname}?invite=${ev.id}`;
-                    return `
-                      <div class="p-4 rounded-xl border transition-all cursor-pointer flex flex-col md:flex-row items-start md:items-center justify-between gap-3 ${
-                        isSelected 
-                          ? 'border-indigo-500 bg-indigo-500/10 shadow-md shadow-indigo-500/5' 
-                          : 'border-slate-200 bg-white/50 hover:bg-white/80'
-                      }" data-event-id="${ev.id}">
+      const isSelected = ev.id === this.activeDashboardEventId;
+      const inviteUrl = `${window.location.origin}${window.location.pathname}?invite=${ev.id}`;
+      return `
+                      <div class="p-4 rounded-xl border transition-all cursor-pointer flex flex-col md:flex-row items-start md:items-center justify-between gap-3 ${isSelected
+          ? 'border-indigo-500 bg-indigo-500/10 shadow-md shadow-indigo-500/5'
+          : 'border-slate-200 bg-white/50 hover:bg-white/80'
+        }" data-event-id="${ev.id}">
                         <div class="flex-1 min-w-0" onclick="document.dispatchEvent(new CustomEvent('switch-event', {detail: '${ev.id}'}))">
                           <div class="flex items-center gap-2">
                             <span class="text-sm font-bold text-slate-800 truncate">${ev.title}</span>
@@ -259,7 +266,7 @@ export class InvitationAppRenderer {
                         </div>
                       </div>
                     `;
-                  }).join('')}
+    }).join('')}
                 </div>
               `}
             </div>
@@ -304,8 +311,8 @@ export class InvitationAppRenderer {
                     <h3 class="text-xs font-bold uppercase tracking-wider text-slate-600">Dietary Needs (Attending)</h3>
                     <div class="space-y-2 bg-white/40 p-4 rounded-xl border border-slate-100">
                       ${Object.entries(stats.dietaryBreakdown).map(([diet, count]) => {
-                        const pct = stats.totalAttendingGuests > 0 ? (count / stats.totalAttendingGuests) * 100 : 0;
-                        return `
+      const pct = stats.totalAttendingGuests > 0 ? (count / stats.totalAttendingGuests) * 100 : 0;
+      return `
                           <div class="space-y-1">
                             <div class="flex justify-between text-xs font-semibold text-slate-700">
                               <span>${diet}</span>
@@ -316,7 +323,7 @@ export class InvitationAppRenderer {
                             </div>
                           </div>
                         `;
-                      }).join('')}
+    }).join('')}
                     </div>
                   </div>
 
@@ -371,13 +378,13 @@ export class InvitationAppRenderer {
     if (form) {
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
+
         // Hide all error messages
         this.container.querySelectorAll('.error-msg').forEach(el => el.classList.add('hidden'));
 
         let mediaUrl = this.container.querySelector('#event-media').value;
         const fileInput = this.container.querySelector('#event-media-file');
-        
+
         if (fileInput && fileInput.files && fileInput.files[0]) {
           const file = fileInput.files[0];
           this.showToast('📤 Uploading image...');
@@ -400,7 +407,8 @@ export class InvitationAppRenderer {
           locationAddress: this.container.querySelector('#event-address').value,
           locationMapLink: this.container.querySelector('#event-map').value,
           mediaUrl: mediaUrl,
-          hostPhone: this.container.querySelector('#event-phone').value
+          hostPhone: this.container.querySelector('#event-phone').value,
+          allowPlusOnes: this.container.querySelector('#event-plus-ones').checked
         };
 
         // Form level validation
@@ -424,9 +432,9 @@ export class InvitationAppRenderer {
 
           const event = await this.createEventUseCase.execute(eventData);
           this.activeDashboardEventId = event.id;
-          
+
           this.showToast('🎉 Invitation created successfully!');
-          
+
           // Re-render dashboard
           await this.renderDashboard();
         } catch (err) {
@@ -453,20 +461,20 @@ export class InvitationAppRenderer {
    */
   async renderGuestInvitation(eventId) {
     const event = await this.getEventDetailsUseCase.execute(eventId);
-    
+
     // Apply event's custom theme variables and background animations
     ThemeEngine.apply(event.theme, this.container);
 
     const formattedDate = formatEventDate(event.dateTime, event.timezone);
     const formattedEndDate = event.endTime ? formatEventDate(event.endTime, event.timezone) : '';
-    
+
     // Format map URL to ensure it is always embeddable (fixes blank/refused map display)
     let mapUrl = event.locationMapLink;
     if (!mapUrl || (!mapUrl.includes('google.com/maps/embed') && !mapUrl.includes('output=embed'))) {
       const searchQuery = mapUrl || `${event.locationAddress}, ${event.locationCity}`;
       mapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(searchQuery)}&output=embed`;
     }
-    
+
     // Choose fallback event banner image based on type
     let bannerUrl = event.mediaUrl;
     if (!bannerUrl) {
@@ -604,12 +612,16 @@ export class InvitationAppRenderer {
 
                 <div id="rsvp-attending-details" class="space-y-4 animate-fade-in">
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label class="block text-xs font-bold uppercase mb-1" style="color: var(--text-secondary)">Additional Guests</label>
-                      <input type="number" id="rsvp-guests" class="form-input bg-white/20 border-white/30" value="0" min="0" max="20">
-                      <span class="error-msg text-red-500 text-xs hidden" id="err-rsvp-guests"></span>
-                    </div>
-                    <div>
+                    ${event.allowPlusOnes ? `
+                      <div>
+                        <label class="block text-xs font-bold uppercase mb-1" style="color: var(--text-secondary)">Additional Guests</label>
+                        <input type="number" id="rsvp-guests" class="form-input bg-white/20 border-white/30" value="0" min="0" max="20">
+                        <span class="error-msg text-red-500 text-xs hidden" id="err-rsvp-guests"></span>
+                      </div>
+                    ` : `
+                      <input type="hidden" id="rsvp-guests" value="0">
+                    `}
+                    <div class="${event.allowPlusOnes ? '' : 'sm:col-span-2'}">
                       <label class="block text-xs font-bold uppercase mb-1" style="color: var(--text-secondary)">Dietary Preference</label>
                       <select id="rsvp-dietary" class="form-input bg-white/20 border-white/30 text-xs">
                         <option value="None" selected>None</option>
@@ -639,7 +651,7 @@ export class InvitationAppRenderer {
 
     // Start timer calculations immediately
     this.startCountdown(event.dateTime);
-    
+
     // Bind listeners
     this.setupGuestListeners(event);
   }
@@ -647,24 +659,24 @@ export class InvitationAppRenderer {
   startCountdown(dateTimeStr) {
     const update = () => {
       const remaining = calculateCountdown(dateTimeStr);
-      
+
       const d = this.container.querySelector('#cd-days');
       const h = this.container.querySelector('#cd-hours');
       const m = this.container.querySelector('#cd-minutes');
       const s = this.container.querySelector('#cd-seconds');
-      
+
       if (d && h && m && s) {
         d.innerText = String(remaining.days).padStart(2, '0');
         h.innerText = String(remaining.hours).padStart(2, '0');
         m.innerText = String(remaining.minutes).padStart(2, '0');
         s.innerText = String(remaining.seconds).padStart(2, '0');
       }
-      
+
       if (remaining.isPast) {
         clearInterval(this.countdownInterval);
       }
     };
-    
+
     update();
     this.countdownInterval = setInterval(update, 1000);
   }
@@ -676,7 +688,7 @@ export class InvitationAppRenderer {
     // Toggle details sub-panel based on Yes/No radio click
     const radioButtons = rsvpForm.querySelectorAll('input[name="attendance"]');
     const detailsPanel = rsvpForm.querySelector('#rsvp-attending-details');
-    
+
     radioButtons.forEach(radio => {
       radio.addEventListener('change', (e) => {
         if (e.target.value === 'no') {
@@ -717,7 +729,7 @@ export class InvitationAppRenderer {
 
       try {
         const { rsvp } = await this.submitRSVPUseCase.execute(rsvpData);
-        
+
         // Success panel render
         this.renderRSVPSuccess(event, rsvpData);
       } catch (err) {

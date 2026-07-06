@@ -49,7 +49,8 @@ export class FirebaseEventRepository extends IEventRepository {
       locationMapLink: event.locationMapLink,
       mediaUrl: event.mediaUrl,
       hostPhone: event.hostPhone,
-      theme: event.theme
+      theme: event.theme,
+      allowPlusOnes: event.allowPlusOnes
     };
     await setDoc(doc(this.db, this.collectionName, event.id), data);
     return event;
@@ -106,7 +107,7 @@ export class FirebaseRSVPRepository extends IRSVPRepository {
       where("guestId", "==", rsvp.guestId)
     );
     const snap = await getDocs(q);
-    
+
     let targetId = rsvp.id;
     if (!snap.empty) {
       targetId = snap.docs[0].id;

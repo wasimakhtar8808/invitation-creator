@@ -31,7 +31,8 @@ export class LocalStorageEventRepository extends IEventRepository {
       locationMapLink: event.locationMapLink,
       mediaUrl: event.mediaUrl,
       hostPhone: event.hostPhone,
-      theme: event.theme
+      theme: event.theme,
+      allowPlusOnes: event.allowPlusOnes
     };
     this._setRawEvents(events);
     return event;
@@ -86,7 +87,7 @@ export class LocalStorageRSVPRepository extends IRSVPRepository {
 
   async saveRSVP(rsvp) {
     const rsvps = this._getRawRSVPs();
-    
+
     // Check if guest already has an RSVP for this event to avoid duplicates
     // If guestId + eventId matches, we update the existing RSVP record
     let matchId = rsvp.id;
