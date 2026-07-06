@@ -48,6 +48,15 @@ export class LocalStorageEventRepository extends IEventRepository {
     const events = this._getRawEvents();
     return Object.values(events).map(data => new Event(data));
   }
+
+  async uploadFile(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
 }
 
 export class LocalStorageRSVPRepository extends IRSVPRepository {

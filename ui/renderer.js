@@ -193,13 +193,17 @@ export class InvitationAppRenderer {
                   <span class="error-msg text-red-500 text-xs hidden" id="err-locationMapLink"></span>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Media URL (Banner Photo)</label>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Banner Image URL</label>
                     <input type="url" id="event-media" class="form-input" placeholder="https://images.unsplash.com/...">
                   </div>
                   <div>
-                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Host Contact (WhatsApp notification)</label>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Or Upload Image File</label>
+                    <input type="file" id="event-media-file" accept="image/*" class="form-input">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Host Contact (WhatsApp)</label>
                     <input type="text" id="event-phone" class="form-input" placeholder="e.g. +447123456789" required>
                     <span class="error-msg text-red-500 text-xs hidden" id="err-hostPhone"></span>
                   </div>
@@ -371,6 +375,19 @@ export class InvitationAppRenderer {
         // Hide all error messages
         this.container.querySelectorAll('.error-msg').forEach(el => el.classList.add('hidden'));
 
+        let mediaUrl = this.container.querySelector('#event-media').value;
+        const fileInput = this.container.querySelector('#event-media-file');
+        
+        if (fileInput && fileInput.files && fileInput.files[0]) {
+          const file = fileInput.files[0];
+          this.showToast('📤 Uploading image...');
+          try {
+            mediaUrl = await this.eventRepo.uploadFile(file);
+          } catch (uploadErr) {
+            console.error('File upload failed:', uploadErr);
+          }
+        }
+
         const eventData = {
           theme: this.container.querySelector('#event-theme').value,
           type: this.container.querySelector('#event-type').value,
@@ -382,7 +399,7 @@ export class InvitationAppRenderer {
           locationCity: this.container.querySelector('#event-city').value,
           locationAddress: this.container.querySelector('#event-address').value,
           locationMapLink: this.container.querySelector('#event-map').value,
-          mediaUrl: this.container.querySelector('#event-media').value,
+          mediaUrl: mediaUrl,
           hostPhone: this.container.querySelector('#event-phone').value
         };
 
@@ -442,6 +459,13 @@ export class InvitationAppRenderer {
 
     const formattedDate = formatEventDate(event.dateTime, event.timezone);
     const formattedEndDate = event.endTime ? formatEventDate(event.endTime, event.timezone) : '';
+    
+    // Format map URL to ensure it is always embeddable (fixes blank/refused map display)
+    let mapUrl = event.locationMapLink;
+    if (!mapUrl || (!mapUrl.includes('google.com/maps/embed') && !mapUrl.includes('output=embed'))) {
+      const searchQuery = mapUrl || `${event.locationAddress}, ${event.locationCity}`;
+      mapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(searchQuery)}&output=embed`;
+    }
     
     // Choose fallback event banner image based on type
     let bannerUrl = event.mediaUrl;
@@ -545,11 +569,9 @@ export class InvitationAppRenderer {
             </section>
 
             <!-- Google Maps Embed Container -->
-            ${event.locationMapLink ? `
-              <div class="w-full h-48 sm:h-64 rounded-2xl overflow-hidden border border-white/30 shadow-lg relative">
-                <iframe src="${event.locationMapLink}" class="w-full h-full border-0" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-              </div>
-            ` : ''}
+            <div class="w-full h-48 sm:h-64 rounded-2xl overflow-hidden border border-white/30 shadow-lg relative">
+              <iframe src="${mapUrl}" class="w-full h-full border-0" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+            </div>
 
             <hr class="border-t border-[var(--text-secondary)]/15">
 

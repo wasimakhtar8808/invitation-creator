@@ -1,27 +1,36 @@
 import { initializeApp, getApp, getApps } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc, getDocs, collection, query, where, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 import { IEventRepository, IRSVPRepository } from '../domain/interfaces.js';
 import { Event, Guest, RSVP } from '../domain/entities.js';
 
 // Singleton Firebase App and DB manager
 let dbInstance = null;
+let appInstance = null;
 
 function getDb(firebaseConfig) {
   if (!dbInstance) {
-    let app;
     if (getApps().length === 0) {
-      app = initializeApp(firebaseConfig);
+      appInstance = initializeApp(firebaseConfig);
     } else {
-      app = getApp();
+      appInstance = getApp();
     }
-    dbInstance = getFirestore(app);
+    dbInstance = getFirestore(appInstance);
   }
   return dbInstance;
+}
+
+function getAppInstance(firebaseConfig) {
+  if (!appInstance) {
+    getDb(firebaseConfig);
+  }
+  return appInstance;
 }
 
 export class FirebaseEventRepository extends IEventRepository {
   constructor(firebaseConfig) {
     super();
+    this.firebaseConfig = firebaseConfig;
     this.db = getDb(firebaseConfig);
     this.collectionName = 'events';
   }
@@ -60,6 +69,24 @@ export class FirebaseEventRepository extends IEventRepository {
       events.push(new Event(docSnap.data()));
     });
     return events;
+  }
+
+  async uploadFile(file) {
+    try {
+      const app = getAppInstance(this.firebaseConfig);
+      const storage = getStorage(app);
+      const storageRef = ref(storage, `banners/${Date.now()}_${file.name}`);
+      const snapshot = await uploadBytes(storageRef, file);
+      return await getDownloadURL(snapshot.ref);
+    } catch (e) {
+      console.warn("Firebase Storage upload failed, falling back to local Base64 URL:", e);
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
   }
 }
 

@@ -22,6 +22,10 @@ export class IEventRepository {
   findAll() {
     throw new NotImplementedError('findAll');
   }
+
+  uploadFile(file) {
+    throw new NotImplementedError('uploadFile');
+  }
 }
 
 export class IRSVPRepository {
