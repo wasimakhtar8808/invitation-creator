@@ -32,7 +32,8 @@ export class LocalStorageEventRepository extends IEventRepository {
       mediaUrl: event.mediaUrl,
       hostPhone: event.hostPhone,
       theme: event.theme,
-      allowPlusOnes: event.allowPlusOnes
+      allowPlusOnes: event.allowPlusOnes,
+      userId: event.userId
     };
     this._setRawEvents(events);
     return event;
@@ -45,9 +46,13 @@ export class LocalStorageEventRepository extends IEventRepository {
     return new Event(data);
   }
 
-  async findAll() {
+  async findAll(userId) {
     const events = this._getRawEvents();
-    return Object.values(events).map(data => new Event(data));
+    const list = Object.values(events).map(data => new Event(data));
+    if (userId) {
+      return list.filter(event => event.userId === userId);
+    }
+    return list;
   }
 
   async uploadFile(file) {

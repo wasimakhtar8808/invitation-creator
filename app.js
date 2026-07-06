@@ -144,6 +144,18 @@ window.addEventListener('popstate', async () => {
   if (FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey) {
     console.log('Firebase Config detected. Initializing Cloud Firestore repositories...');
     try {
+      const { initializeApp, getApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js");
+      const { getAuth } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js");
+
+      let app;
+      if (getApps().length === 0) {
+        app = initializeApp(FIREBASE_CONFIG);
+      } else {
+        app = getApp();
+      }
+
+      window.firebaseAuthInstance = getAuth(app);
+
       const { FirebaseEventRepository, FirebaseRSVPRepository } = await import('./adapters/firebaseRepositories.js');
       eventRepo = new FirebaseEventRepository(FIREBASE_CONFIG);
       rsvpRepo = new FirebaseRSVPRepository(FIREBASE_CONFIG);
@@ -197,5 +209,13 @@ window.addEventListener('popstate', async () => {
   // await seedDefaultData();
 
   // 5. Trigger routing
-  await renderer.route();
+  if (window.firebaseAuthInstance) {
+    const { onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js");
+    onAuthStateChanged(window.firebaseAuthInstance, async (user) => {
+      renderer.setCurrentUser(user);
+      await renderer.route();
+    });
+  } else {
+    await renderer.route();
+  }
 })();

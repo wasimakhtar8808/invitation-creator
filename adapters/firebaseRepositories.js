@@ -50,7 +50,8 @@ export class FirebaseEventRepository extends IEventRepository {
       mediaUrl: event.mediaUrl,
       hostPhone: event.hostPhone,
       theme: event.theme,
-      allowPlusOnes: event.allowPlusOnes
+      allowPlusOnes: event.allowPlusOnes,
+      userId: event.userId
     };
     await setDoc(doc(this.db, this.collectionName, event.id), data);
     return event;
@@ -63,8 +64,15 @@ export class FirebaseEventRepository extends IEventRepository {
     return new Event(docSnap.data());
   }
 
-  async findAll() {
-    const querySnapshot = await getDocs(collection(this.db, this.collectionName));
+  async findAll(userId) {
+    // If no userId is supplied (e.g. self-test suites), query all events as fallback
+    let q;
+    if (userId) {
+      q = query(collection(this.db, this.collectionName), where('userId', '==', userId));
+    } else {
+      q = collection(this.db, this.collectionName);
+    }
+    const querySnapshot = await getDocs(q);
     const events = [];
     querySnapshot.forEach((docSnap) => {
       events.push(new Event(docSnap.data()));

@@ -17,7 +17,8 @@ export class Event {
     mediaUrl,
     hostPhone,
     theme,
-    allowPlusOnes
+    allowPlusOnes,
+    userId
   }) {
     this.id = id || this._generateUUID();
     this.type = type || 'custom'; // marriage, birthday, party, corporate, babyshower, custom
@@ -33,6 +34,7 @@ export class Event {
     this.hostPhone = hostPhone || '';
     this.theme = theme || 'romantic-wedding';
     this.allowPlusOnes = allowPlusOnes !== false;
+    this.userId = userId || '';
   }
 
   validate() {

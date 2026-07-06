@@ -22,6 +22,11 @@ export class InvitationAppRenderer {
     this.countdownInterval = null;
     this.selectedTheme = 'romantic-wedding';
     this.activeDashboardEventId = null; // Currently selected event for RSVP stats
+    this.currentUser = null;
+  }
+
+  setCurrentUser(user) {
+    this.currentUser = user;
   }
 
   /**
@@ -46,8 +51,13 @@ export class InvitationAppRenderer {
         this.renderErrorPage('Invitation not found or could not be loaded.');
       }
     } else {
-      // 2. Show Creator Dashboard
-      await this.renderDashboard();
+      // 2. Show Creator Dashboard (redirect to login if Firebase Auth is active but user is logged out)
+      const isFirebaseEnabled = typeof window.firebaseAuthInstance !== 'undefined';
+      if (isFirebaseEnabled && !this.currentUser) {
+        await this.renderLogin();
+      } else {
+        await this.renderDashboard();
+      }
     }
   }
 
@@ -76,7 +86,7 @@ export class InvitationAppRenderer {
     // Set corporate/clean styling defaults for dashboard
     ThemeEngine.apply('formal-corporate', this.container);
 
-    const events = await this.getAllEventsUseCase.execute();
+    const events = await this.getAllEventsUseCase.execute(this.currentUser?.uid);
 
     // Choose active event for statistics (default to first event if not set)
     if (!this.activeDashboardEventId && events.length > 0) {
@@ -105,9 +115,16 @@ export class InvitationAppRenderer {
             </h1>
             <p class="text-slate-600">Design gorgeous glassmorphic invitations and manage RSVPs in real time.</p>
           </div>
-          <div class="flex items-center gap-2">
-            <span class="text-sm font-semibold px-3 py-1 bg-slate-200 text-slate-800 rounded-full">Dashboard</span>
-            <span class="text-xs text-slate-500">v1.0 (SOLID Compliant)</span>
+          <div class="flex items-center gap-3">
+            ${this.currentUser ? `
+              <div class="flex items-center gap-2 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-full text-xs font-bold text-slate-700">
+                ${this.currentUser.photoURL ? `<img src="${this.currentUser.photoURL}" class="w-5 h-5 rounded-full">` : '👤'}
+                <span>${this.currentUser.displayName || this.currentUser.email}</span>
+              </div>
+              <button id="auth-signout-btn" class="text-xs font-bold bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 border border-rose-500/20 px-3 py-1.5 rounded-full transition-all">Sign Out</button>
+            ` : `
+              <span class="text-sm font-semibold px-3 py-1 bg-slate-200 text-slate-800 rounded-full">Local Mode</span>
+            `}
           </div>
         </header>
 
@@ -408,7 +425,8 @@ export class InvitationAppRenderer {
           locationMapLink: this.container.querySelector('#event-map').value,
           mediaUrl: mediaUrl,
           hostPhone: this.container.querySelector('#event-phone').value,
-          allowPlusOnes: this.container.querySelector('#event-plus-ones').checked
+          allowPlusOnes: this.container.querySelector('#event-plus-ones').checked,
+          userId: this.currentUser?.uid || ''
         };
 
         // Form level validation
@@ -439,6 +457,20 @@ export class InvitationAppRenderer {
           await this.renderDashboard();
         } catch (err) {
           alert(`Error creating event: ${err.message}`);
+        }
+      });
+    }
+
+    const signOutBtn = this.container.querySelector('#auth-signout-btn');
+    if (signOutBtn) {
+      signOutBtn.addEventListener('click', async () => {
+        try {
+          const { signOut } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js");
+          const auth = window.firebaseAuthInstance;
+          await signOut(auth);
+        } catch (err) {
+          console.error(err);
+          alert('Sign out failed');
         }
       });
     }
@@ -778,5 +810,142 @@ export class InvitationAppRenderer {
         </div>
       </div>
     `;
+  }
+
+  async renderLogin() {
+    ThemeEngine.apply('formal-corporate', this.container);
+    this.container.innerHTML = `
+      <div class="guest-view-wrapper min-h-screen py-12 px-4 flex items-center justify-center select-none-floating bg-slate-50">
+        <div class="glass-card max-w-md w-full border border-white/40 shadow-2xl rounded-3xl p-8 space-y-6 bg-white/40 backdrop-blur-md relative overflow-hidden">
+          <div class="glow-overlay select-none pointer-events-none"></div>
+          
+          <header class="text-center space-y-2">
+            <h1 class="text-3xl font-extrabold tracking-tight text-slate-800" style="font-family: var(--font-title)">
+              ✨ Invitation Portal
+            </h1>
+            <p class="text-xs font-semibold text-slate-600">Securely build and manage your digital RSVP cards</p>
+          </header>
+
+          <hr class="border-t border-slate-700/10">
+
+          <div class="space-y-4">
+            <!-- Google Sign In Button -->
+            <button id="google-login-btn" class="w-full flex items-center justify-center gap-3 bg-white hover:bg-slate-50 text-slate-700 font-bold py-3 px-4 border border-slate-200 rounded-xl shadow-md transition-all active:scale-[0.98]">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+                <g transform="matrix(1, 0, 0, 1, 0, 0)">
+                  <path d="M21.35,11.1H12v2.7h5.38c-0.24,1.28 -0.96,2.37 -2.04,3.1v2.57h3.3c1.93,-1.78 3.04,-4.4 3.04,-7.4C21.68,11.83 21.56,11.41 21.35,11.1z" fill="#4285F4" />
+                  <path d="M12,20.62c2.43,0 4.47,-0.8 5.96,-2.18l-3.3,-2.57c-0.9,0.6 -2.07,0.97 -3.3,0.97 -2.34,0 -4.33,-1.58 -5.04,-3.71H2.88v2.66C4.38,18.77 7.91,20.62 12,20.62z" fill="#34A853" />
+                  <path d="M6.96,13.13c-0.18,-0.54 -0.29,-1.11 -0.29,-1.7 0,-0.59 0.11,-1.16 0.29,-1.7V7.07H2.88C2.28,8.27 1.94,9.63 1.94,11.07s0.34,2.8 0.94,4V12.4H6.96z" fill="#FBBC05" />
+                  <path d="M12,5.2c1.32,0 2.5,0.45 3.44,1.35l2.58,-2.58C16.46,2.56 14.42,1.76 12,1.76c-4.09,0 -7.62,1.85 -9.12,4.83l3.36,2.66C6.96,6.78 8.95,5.2 12,5.2z" fill="#EA4335" />
+                </g>
+              </svg>
+              <span>Sign In with Google</span>
+            </button>
+
+            <div class="flex items-center justify-between text-[10px] text-slate-400 my-2">
+              <span class="w-1/3 border-b border-slate-200"></span>
+              <span class="uppercase font-bold">or use email</span>
+              <span class="w-1/3 border-b border-slate-200"></span>
+            </div>
+
+            <!-- Email & Password Form -->
+            <form id="email-login-form" class="space-y-3">
+              <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Email Address</label>
+                <input type="email" id="login-email" class="form-input text-xs" placeholder="name@example.com" required>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Password</label>
+                <input type="password" id="login-password" class="form-input text-xs" placeholder="••••••••" required>
+              </div>
+              
+              <div class="flex justify-between items-center text-[10px] text-slate-500 pt-1">
+                <span id="auth-toggle-msg">Don't have an account?</span>
+                <button type="button" id="auth-toggle-btn" class="text-indigo-600 hover:underline font-bold">Register here</button>
+              </div>
+
+              <span id="login-error" class="error-msg text-red-500 text-xs hidden block text-center"></span>
+
+              <button type="submit" id="auth-submit-btn" class="w-full btn btn-primary py-3 font-bold shadow-md transition-all active:scale-[0.98]">
+                🔑 Sign In
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    `;
+
+    this.setupLoginListeners();
+  }
+
+  setupLoginListeners() {
+    const googleBtn = this.container.querySelector('#google-login-btn');
+    const form = this.container.querySelector('#email-login-form');
+    const toggleBtn = this.container.querySelector('#auth-toggle-btn');
+    const toggleMsg = this.container.querySelector('#auth-toggle-msg');
+    const submitBtn = this.container.querySelector('#auth-submit-btn');
+    const errorEl = this.container.querySelector('#login-error');
+    
+    let isRegisterMode = false;
+
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', () => {
+        isRegisterMode = !isRegisterMode;
+        if (isRegisterMode) {
+          toggleMsg.innerText = 'Already have an account?';
+          toggleBtn.innerText = 'Sign In here';
+          submitBtn.innerText = '📝 Register Account';
+        } else {
+          toggleMsg.innerText = "Don't have an account?";
+          toggleBtn.innerText = 'Register here';
+          submitBtn.innerText = '🔑 Sign In';
+        }
+        if (errorEl) errorEl.classList.add('hidden');
+      });
+    }
+
+    if (googleBtn) {
+      googleBtn.addEventListener('click', async () => {
+        try {
+          if (errorEl) errorEl.classList.add('hidden');
+          const { signInWithPopup, GoogleAuthProvider } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js");
+          const auth = window.firebaseAuthInstance;
+          const provider = new GoogleAuthProvider();
+          await signInWithPopup(auth, provider);
+        } catch (err) {
+          console.error(err);
+          if (errorEl) {
+            errorEl.innerText = `Google sign-in failed: ${err.message.replace('Firebase: ', '')}`;
+            errorEl.classList.remove('hidden');
+          }
+        }
+      });
+    }
+
+    if (form) {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = this.container.querySelector('#login-email').value;
+        const password = this.container.querySelector('#login-password').value;
+        if (errorEl) errorEl.classList.add('hidden');
+        
+        try {
+          const auth = window.firebaseAuthInstance;
+          if (isRegisterMode) {
+            const { createUserWithEmailAndPassword } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js");
+            await createUserWithEmailAndPassword(auth, email, password);
+          } else {
+            const { signInWithEmailAndPassword } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js");
+            await signInWithEmailAndPassword(auth, email, password);
+          }
+        } catch (err) {
+          console.error(err);
+          if (errorEl) {
+            errorEl.innerText = err.message.replace('Firebase: ', '');
+            errorEl.classList.remove('hidden');
+          }
+        }
+      });
+    }
   }
 }

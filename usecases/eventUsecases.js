@@ -38,7 +38,7 @@ export class GetAllEvents {
     this.eventRepository = eventRepository;
   }
 
-  async execute() {
-    return await this.eventRepository.findAll();
+  async execute(userId) {
+    return await this.eventRepository.findAll(userId);
   }
 }

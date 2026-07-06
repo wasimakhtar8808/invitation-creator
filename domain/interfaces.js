@@ -19,7 +19,7 @@ export class IEventRepository {
     throw new NotImplementedError('findById');
   }
 
-  findAll() {
+  findAll(userId) {
     throw new NotImplementedError('findAll');
   }
 
