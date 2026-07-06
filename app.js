@@ -27,7 +27,7 @@ async function seedDefaultData() {
   const existingEvents = await eventRepo.findAll();
   if (existingEvents.length === 0) {
     console.log('Seeding initial demonstration data...');
-    
+
     // Seed 1: Wedding Event
     const weddingDate = new Date();
     weddingDate.setDate(weddingDate.getDate() + 45); // 45 days from now
@@ -194,7 +194,7 @@ window.addEventListener('popstate', async () => {
   });
 
   // 4. Seed databases if empty
-  await seedDefaultData();
+  // await seedDefaultData();
 
   // 5. Trigger routing
   await renderer.route();

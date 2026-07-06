@@ -12,7 +12,7 @@ Built in accordance with **Clean Architecture** boundaries and **SOLID Principle
 *   **GitHub Repository**: [https://github.com/wasimakhtar8808/invitation-creator](https://github.com/wasimakhtar8808/invitation-creator)
 
 ### 🔥 Backend Configuration (Firebase)
-*   **Google Account Owner**: `ghosistate@gmail.com`
+*   **Google Account Owner**: `ghosi160@gmail.com`
 *   **Firebase Project Console**: [invitation-creator-rsvp Dashboard](https://console.firebase.google.com/u/0/project/invitation-creator-rsvp/overview)
 *   **Pricing Plan**: **Spark Plan (100% Free)** — No credit card details or billing required.
 *   **Active Services**:
