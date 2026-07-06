@@ -8,15 +8,14 @@ import { InvitationAppRenderer } from './ui/renderer.js';
 // 2. Under 'Your apps', click the Web App (</>) and copy the firebaseConfig object.
 // 3. Paste the config object below.
 // Example:
-// const FIREBASE_CONFIG = {
-//   apiKey: "AIzaSy...",
-//   authDomain: "invitation-creator-rsvp.firebaseapp.com",
-//   projectId: "invitation-creator-rsvp",
-//   storageBucket: "invitation-creator-rsvp.appspot.com",
-//   messagingSenderId: "123456789",
-//   appId: "1:123456789:web:abcd1234efgh"
-// };
-const FIREBASE_CONFIG = null;
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyC9_ouQcOFlMyQIWNnclsVozoU5ACVIlkc",
+  authDomain: "invitation-creator-rsvp.firebaseapp.com",
+  projectId: "invitation-creator-rsvp",
+  storageBucket: "invitation-creator-rsvp.firebasestorage.app",
+  messagingSenderId: "10325981406",
+  appId: "1:10325981406:web:5da6c3afc97ca329a16a4f"
+};
 
 // Global repositories and renderer instances
 let eventRepo;
